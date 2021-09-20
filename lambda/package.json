@@ -1,0 +1,16 @@
+{
+    "name": "ocean-archive.org",
+    "version": "0.9.0",
+    "description": "Alexa skill for diving into the Ocean Archive",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Matthew Berryman",
+    "license": "GPL-3.0",
+    "dependencies": {
+      "ask-sdk-core": "^2.11.0",
+      "ask-sdk-model": "^1.36.1",
+      "aws-sdk": "^2.991.0"
+    }
+  }
