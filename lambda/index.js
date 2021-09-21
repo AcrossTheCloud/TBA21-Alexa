@@ -22,7 +22,7 @@ const AudioSearchHandler = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope.request;
 
-    return request.type === 'IntentRequest' && request.intent.name === 'ItemsIntent';
+    return request.type === 'IntentRequest' && request.intent.name === 'AudioItemIntent';
   },
   handle: async (handlerInput) => {
     console.log('running items handler');

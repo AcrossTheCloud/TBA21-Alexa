@@ -1,7 +1,7 @@
 {
     "interactionModel": {
         "languageModel": {
-            "invocationName": "hello world",
+            "invocationName": "ocean archive",
             "intents": [
                 {
                     "name": "AMAZON.CancelIntent",
@@ -31,6 +31,19 @@
                 {
                     "name": "AMAZON.NavigateHomeIntent",
                     "samples": []
+                },
+                {
+                    "name": "AudioItemIntent",
+                    "slots": [
+                      {
+                        "name": "keyword",
+                        "type": "AMAZON.SearchQuery"
+                      }
+                    ],
+                    "samples": [
+                      "search audio for {keyword}",
+                      "listen to {keyword}"
+                    ]
                 }
             ],
             "types": []
