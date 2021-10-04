@@ -187,6 +187,8 @@ const StoryHandler = {
       if (storyContent.length > 7900) {
         storyContent = truncate(storyContent,7900) + '<break strength="strong"/>To read the full story, visit Ocean-Archive.org';
       }
+      // read tags as words, strip out the indication markers
+      storyContent.replace(/{{{(keyword_tag:)([\w ]+)}}}/g,'$2').replace(/{{{(concept_tag:)([\w ]+)}}}/g,'$2');
       speechOutput += storyContent;
     }
     return responseBuilder.speak(speechOutput).getResponse();
