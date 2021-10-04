@@ -98,7 +98,7 @@ const AudioSearchHandler = {
 
 
 // truncate keeping tags matched, from https://www.titanwolf.org/Network/q/9e657c27-24a1-450d-9ecc-8e48fc173f78/y
-const truncte = (s, approxNumChars) => {
+const truncate = (s, approxNumChars) => {
   var taggish = /<[^>]+>/g;
   var s = s.slice(0, approxNumChars); // ignores tag lengths for solution brevity
   s = s.replace(/<[^>]*$/, '');  // rm any trailing partial tags
