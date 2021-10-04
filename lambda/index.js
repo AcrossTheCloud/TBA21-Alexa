@@ -3,7 +3,9 @@
 // session persistence, api calls, and more.
 const Alexa = require('ask-sdk-core');
 const aws4 = require('aws4');
-import { sample } from 'lodash';
+const sample = require('lodash').sample;
+const fromHTML = require('@acrossthecloud/speakhtml').fromHTML;
+const axios = require('axios');
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -62,8 +64,9 @@ const AudioSearchHandler = {
     delete signedRequest.headers['Host'];
     delete signedRequest.headers['Content-Length'];
 
+    console.log(signedRequest);
 
-    let response = await fetch(signedRequest);
+    let response = await axios(signedRequest);
     let result = response.data.results.filter((item) => {
         if (item.title.toLowerCase().includes(term.toLowerCase())) {
             return true;
@@ -77,7 +80,7 @@ const AudioSearchHandler = {
     if (result.length===0) {
       speechOutput = 'Sorry, no matching items found.';
     } else {
-      speechOutput = 'I found these matching items. ';
+      speechOutput = '';
       const item = sample(result);
       let audio = '';
       for (let url of item.urls) {
@@ -92,6 +95,104 @@ const AudioSearchHandler = {
     return responseBuilder.speak(speechOutput).getResponse();
   }
 };
+
+
+// truncate keeping tags matched, from https://www.titanwolf.org/Network/q/9e657c27-24a1-450d-9ecc-8e48fc173f78/y
+const truncte = (s, approxNumChars) => {
+  var taggish = /<[^>]+>/g;
+  var s = s.slice(0, approxNumChars); // ignores tag lengths for solution brevity
+  s = s.replace(/<[^>]*$/, '');  // rm any trailing partial tags
+  tags = s.match(taggish);
+
+  // find out which tags are unmatched
+  var openTagsSeen = [];
+  for (tag_i in tags) {
+    var tag = tags[tag_i];
+    if (tag.match(/<[^>]+>/) !== null) {
+      openTagsSeen.push(tag);
+    }
+    else {
+      // quick version that assumes your HTML is correctly formatted (alas) -- else we would have to check the content inside for matches and loop through the opentags
+      openTagsSeen.pop();
+    }
+  }
+
+  // reverse and close unmatched tags
+  openTagsSeen.reverse();
+  for (tag_i in openTagsSeen) {
+    s += ('<\\' + openTagsSeen[tag_i].match(/\w+/)[0] + '>');
+  }
+  return s + '.';
+}
+
+const StoryHandler = {
+  canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+
+    return request.type === 'IntentRequest' && request.intent.name === 'StoryItemIntent';
+  },
+  handle: async (handlerInput) => {
+    console.log('running story items handler');
+    const request = handlerInput.requestEnvelope.request;
+    const responseBuilder = handlerInput.responseBuilder;
+    let speechOutput;
+
+    let term = '';
+    if (request.intent.slots.keyword.value && request.intent.slots.keyword.value !== "?") {
+      term = request.intent.slots.keyword.value;
+    }
+    term = encodeURIComponent(term);
+
+    console.log('searching for ' + term);
+    let response;
+    try {    
+      response = await axios(`${process.env.WP_BASE_URL}/wp-json/wp/v2/posts?search=${term}`);
+    } catch (e) {
+      console.error(e);
+    }
+    let result = response.data;
+    console.log(result);
+
+    if (result.length===0) {
+      speechOutput = 'Sorry, no matching items found.';
+    } else {
+      const post = sample(result);
+      console.log(post);
+      speechOutput = `<emphasis>${post.title.rendered}</emphasis>. `;
+      let authors = [];
+      await Promise.all(post.categories.map(async (category)=>{
+        const categoryResponse = await axios(`${process.env.WP_BASE_URL}/wp-json/wp/v2/categories/${category}`);
+        const categoryData = categoryResponse.data;
+        console.log(categoryData);
+        if (categoryData.parent===370) { // author category
+          authors.push(categoryData.name)
+        }
+      }));
+      console.log(authors);
+      if (authors.length > 0) {
+        speechOutput += '<break strength="strong"/>By';
+        if (authors.length >= 3) {
+          authors.slice(0,-2).forEach((author)=>{
+            speechOutput += ' ' + author + ','
+          });
+          speechOutput += authors[authors.length-2] + ' and ' + authors[authors.length-1];
+        } else if (authors.length==2) {
+          speechOutput += ' ' + authors[0] + ' and ' + authors[1] + '.';
+        } else {
+          speechOutput = authors[0] + '.';
+        }
+        speechOutput += '<break strength="strong"/>';
+      }
+      let storyContent = fromHTML('<html><body>'+post.content.rendered+'</body></html>',false);
+      if (storyContent.length > 7900) {
+        storyContent = truncate(storyContent,7900) + '<break strength="strong"/>To read the full story, visit Ocean-Archive.org';
+      }
+      speechOutput += storyContent;
+    }
+    return responseBuilder.speak(speechOutput).getResponse();
+  }
+};
+
 
 const HelpIntentHandler = {
   canHandle(handlerInput) {
@@ -155,11 +256,11 @@ const ErrorHandler = {
 exports.handler = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
     LaunchRequestHandler,
-    HelloWorldIntentHandler,
     HelpIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler,
-    AudioSearchHandler
+    AudioSearchHandler,
+    StoryHandler,
     ) 
   .addErrorHandlers(
     ErrorHandler,

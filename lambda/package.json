@@ -9,10 +9,12 @@
     "author": "Matthew Berryman",
     "license": "GPL-3.0",
     "dependencies": {
+        "@acrossthecloud/speakhtml": "^0.7.0",
         "ask-sdk-core": "^2.11.0",
         "ask-sdk-model": "^1.36.1",
         "aws-sdk": "^2.991.0",
         "aws4": "^1.11.0",
+        "axios": "^0.22.0",
         "lodash": "^4.17.21"
     }
 }

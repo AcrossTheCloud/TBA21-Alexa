@@ -12,7 +12,9 @@ Parameters:
     Type: String
   CodeVersion:
     Type: String
-  OAAPIARN:
+  OAAPIID:
+    Type: String
+  WPBaseUrl:
     Type: String
 Resources:
   AlexaSkillIAMRole:
@@ -40,7 +42,11 @@ Resources:
                 - Effect: Allow
                   Action:
                     - execute-api:Invoke
-                  Resource: !Ref OAAPIARN
+                  Resource: !Join
+                    - ''
+                    - - 'arn:aws:execute-api:eu-central-1:811876431819:'
+                      - !Ref OAAPIID
+                      - '/*/*/*'
   AlexaSkillFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -51,6 +57,10 @@ Resources:
       Handler: !Ref LambdaHandler
       Runtime: !Ref LambdaRuntime
       Role: !GetAtt AlexaSkillIAMRole.Arn
+      Environment:
+        Variables: 
+          OA_API_ID: !Ref OAAPIID
+          WP_BASE_URL: !Ref WPBaseUrl
       MemorySize: 512
       Timeout: 60
   AlexaSkillFunctionEventPermission:

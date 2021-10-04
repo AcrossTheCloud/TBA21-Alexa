@@ -44,6 +44,21 @@
                       "search audio for {keyword}",
                       "listen to {keyword}"
                     ]
+                },
+                {
+                    "name": "StoryItemIntent",
+                    "slots": [
+                      {
+                        "name": "keyword",
+                        "type": "AMAZON.SearchQuery"
+                      }
+                    ],
+                    "samples": [
+                      "listen to a story about {keyword}",
+                      "listen to a story",
+                      "tell me a story about {keyword}",
+                      "tell me a story"
+                    ]
                 }
             ],
             "types": []
