@@ -179,7 +179,7 @@ const StoryHandler = {
         } else if (authors.length==2) {
           speechOutput += ' ' + authors[0] + ' and ' + authors[1] + '.';
         } else {
-          speechOutput = authors[0] + '.';
+          speechOutput += authors[0] + '.';
         }
         speechOutput += '<break strength="strong"/>';
       }
