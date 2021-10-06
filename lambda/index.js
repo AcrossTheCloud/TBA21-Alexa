@@ -42,21 +42,17 @@ const AudioSearchHandler = {
         {
           "field": "item_type",
           "value": "Audio"
-        },
-
+        }
       ]
     }
     console.log('searching for ' + term);
 
     const APIrequest = {
       host: `${process.env.OA_API_ID}.execute-api.eu-central-1.amazonaws.com`,
-      method: 'GET',
-      url: `${process.env.OA_API_ID}.execute-api.eu-central-1.amazonaws.com/prod/pages/search`,
+      method: 'POST',
+      url: `https://${process.env.OA_API_ID}.execute-api.eu-central-1.amazonaws.com/prod/pages/search`,
       path: '/prod/pages/search',
-      body: JSON.stringify(searchRequest),
-      headers: {
-      'Content-Type': 'application/json'
-      }
+      data: searchRequest
     }
 
     let signedRequest = aws4.sign(APIrequest);
@@ -75,6 +71,7 @@ const AudioSearchHandler = {
           }
         }
       );
+    console.log(result);
     let speechOutput = '';
 
     if (result.length===0) {
@@ -83,13 +80,13 @@ const AudioSearchHandler = {
       speechOutput = '';
       const item = sample(result);
       let audio = '';
-      for (let url of item.urls) {
-        if (url.toLowerCase().endsWith('.mp3') && url.toLowerCase().startsWith('https')) {
-          audio = encodeURI(url);
-        }
-      }
+
+      let url = `${process.env.ALEXA_CDN_BASE_URL}/${item.s3_key.slice(0,-4)}_Alexa_audio.mp3`;
+      console.log(url);
+      audio = encodeURI(url);
+
       if (audio) {
-        speechOutput += `Item ${idx+1} is ${result[idx].description} located in the ${result[idx].ocean} ocean, tagged with ${result[idx].tags}. I'll now play you the audio. <audio src="${audio}" /> `;
+        speechOutput += `Playing as much as I can of ${item.title} by ${item.creators[0]}. To listen to the full audio please visit Ocean-Archive.org. <audio src="${audio}" /> `;
       }
     }
     return responseBuilder.speak(speechOutput).getResponse();
@@ -183,7 +180,14 @@ const StoryHandler = {
         }
         speechOutput += '<break strength="strong"/>';
       }
-      let storyContent = fromHTML('<html><body>'+post.content.rendered+'</body></html>',false);
+      const filterFootnotes = (fragment) => {
+        if (fragment.tagName.toLowerCase==='ul' && fragment.classList.includes('modern-footnotes-list')) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+      let storyContent = fromHTML('<html><body>'+post.content.rendered+'</body></html>',false,filterFootnotes);
       if (storyContent.length > 7900) {
         storyContent = truncate(storyContent,7900) + '<break strength="strong"/>To read the full story, visit Ocean-Archive.org';
       }
