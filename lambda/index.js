@@ -193,7 +193,7 @@ const StoryHandler = {
         }
       }
       let storyContent = fromHTML('<html><body>'+post.content.rendered+'</body></html>',false,filterFootnotes);
-      storyContent.replace(/{{{(keyword_tag:)([\w ]+)}}}/g,'$2').replace(/{{{(concept_tag:)([\w ]+)}}}/g,'$2');
+      storyContent.replaceAll(/{{{(keyword_tag:)([\w ]+)}}}/g,'$2').replaceAll(/{{{(concept_tag:)([\w ]+)}}}/g,'$2');
       if (storyContent.length > 7000) {
         storyContent = truncate(storyContent,7000) + '<break strength="strong"/>';
         speechOutput = `Playing you an excerpt from ${post.title.rendered} by ${authorSpeech}. To read the full story, visit Ocean-Archive.org. ${storyContent}`;
