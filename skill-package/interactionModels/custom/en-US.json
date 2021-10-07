@@ -16,21 +16,16 @@
                     "samples": []
                 },
                 {
-                    "name": "HelloWorldIntent",
-                    "slots": [],
-                    "samples": [
-                        "hello",
-                        "how are you",
-                        "say hi world",
-                        "say hi",
-                        "hi",
-                        "say hello world",
-                        "say hello"
-                    ]
-                },
-                {
                     "name": "AMAZON.NavigateHomeIntent",
                     "samples": []
+                },
+                {
+                    "name": "AboutIntent",
+                    "samples": [ 
+                      "about the archive",
+                      "about ocean archive",
+                      "tell me about the ocean archive"
+                    ]
                 },
                 {
                     "name": "AudioItemIntent",
@@ -41,8 +36,11 @@
                       }
                     ],
                     "samples": [
-                      "search audio for {keyword}",
-                      "listen to {keyword}"
+                      "listen to an item about {keyword}",
+                      "listen to an item",
+                      "play an item about {keyword}",
+                      "play an item",
+                      "search items for {keyword}"
                     ]
                 },
                 {
@@ -57,7 +55,8 @@
                       "listen to a story about {keyword}",
                       "listen to a story",
                       "tell me a story about {keyword}",
-                      "tell me a story"
+                      "tell me a story",
+                      "search stories for {keyword}"
                     ]
                 }
             ],

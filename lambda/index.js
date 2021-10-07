@@ -12,7 +12,7 @@ const LaunchRequestHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const speakOutput = 'Welcome, you can say Hello or Help. Which would you like to try?';
+    const speakOutput = 'Welcome, you can search for a story about something, or listen to an item about something, or just ask to listen to a story, or listen to an item for a wider selection.';
     return handlerInput.responseBuilder
       .speak(speakOutput)
       .reprompt(speakOutput)
@@ -63,7 +63,9 @@ const AudioSearchHandler = {
     console.log(signedRequest);
 
     let response = await axios(signedRequest);
-    let result = response.data.results.filter((item) => {
+    let result;
+    if (term) {
+      result = response.data.results.filter((item) => {
         if (item.title.toLowerCase().includes(term.toLowerCase())) {
             return true;
           } else {
@@ -71,6 +73,9 @@ const AudioSearchHandler = {
           }
         }
       );
+    } else {
+      result = response.data.results;
+    }
     console.log(result);
     let speechOutput = '';
 
@@ -86,7 +91,7 @@ const AudioSearchHandler = {
       audio = encodeURI(url);
 
       if (audio) {
-        speechOutput += `Playing as much as I can of ${item.title} by ${item.creators[0]}. To listen to the full audio please visit Ocean-Archive.org. <audio src="${audio}" /> `;
+        speechOutput += `Playing an excerpt from ${item.title} by ${item.creators[0]}. To listen to the full audio please visit Ocean-Archive.org. <audio src="${audio}" />`;
       }
     }
     return responseBuilder.speak(speechOutput).getResponse();
@@ -132,7 +137,7 @@ const StoryHandler = {
     console.log('running story items handler');
     const request = handlerInput.requestEnvelope.request;
     const responseBuilder = handlerInput.responseBuilder;
-    let speechOutput;
+    let speechOutput = '';
 
     let term = '';
     if (request.intent.slots.keyword.value && request.intent.slots.keyword.value !== "?") {
@@ -155,7 +160,6 @@ const StoryHandler = {
     } else {
       const post = sample(result);
       console.log(post);
-      speechOutput = `<emphasis>${post.title.rendered}</emphasis>. `;
       let authors = [];
       await Promise.all(post.categories.map(async (category)=>{
         const categoryResponse = await axios(`${process.env.WP_BASE_URL}/wp-json/wp/v2/categories/${category}`);
@@ -166,19 +170,20 @@ const StoryHandler = {
         }
       }));
       console.log(authors);
+      let authorSpeech = '';
       if (authors.length > 0) {
-        speechOutput += '<break strength="strong"/>By';
+        authorSpeech += 'By ';
         if (authors.length >= 3) {
           authors.slice(0,-2).forEach((author)=>{
-            speechOutput += ' ' + author + ','
+            authorSpeech += ' ' + author + ','
           });
-          speechOutput += authors[authors.length-2] + ' and ' + authors[authors.length-1];
+          authorSpeech += authors[authors.length-2] + ' and ' + authors[authors.length-1];
         } else if (authors.length==2) {
-          speechOutput += ' ' + authors[0] + ' and ' + authors[1] + '.';
+          authorSpeech += ' ' + authors[0] + ' and ' + authors[1] + '.';
         } else {
-          speechOutput += authors[0] + '.';
+          authorSpeech += authors[0] + '.';
         }
-        speechOutput += '<break strength="strong"/>';
+        authorSpeech += '<break strength="strong"/>';
       }
       const filterFootnotes = (fragment) => {
         if (fragment.tagName.toLowerCase==='ul' && fragment.classList.includes('modern-footnotes-list')) {
@@ -188,12 +193,16 @@ const StoryHandler = {
         }
       }
       let storyContent = fromHTML('<html><body>'+post.content.rendered+'</body></html>',false,filterFootnotes);
-      if (storyContent.length > 7900) {
-        storyContent = truncate(storyContent,7900) + '<break strength="strong"/>To read the full story, visit Ocean-Archive.org';
-      }
-      // read tags as words, strip out the indication markers
       storyContent.replace(/{{{(keyword_tag:)([\w ]+)}}}/g,'$2').replace(/{{{(concept_tag:)([\w ]+)}}}/g,'$2');
-      speechOutput += storyContent;
+      if (storyContent.length > 7000) {
+        storyContent = truncate(storyContent,7000) + '<break strength="strong"/>';
+        speechOutput = `Playing you an excerpt from ${post.title.rendered} by ${authorSpeech}. To read the full story, visit Ocean-Archive.org. ${storyContent}`;
+      } else {
+        speechOutput = `${post.title.rendered} by ${authorSpeech}. ${storyContent}`;
+      }
+      console.log(storyContent);
+      console.log(speechOutput);
+
     }
     return responseBuilder.speak(speechOutput).getResponse();
   }
@@ -206,7 +215,21 @@ const HelpIntentHandler = {
       && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speakOutput = 'You can say hello to me! How can I help?';
+    const speakOutput = 'The full set of requests I understand are "listen to an item about {keyword}", "listen to an item", "play an item about {keyword}", "play an item", "search items for {keyword}", "listen to a story about {keyword}", "listen to a story", "tell me a story about {keyword}", "tell me a story", or "search stories for {keyword}';
+
+    return handlerInput.responseBuilder
+      .speak(speakOutput)
+      .reprompt(speakOutput)
+      .getResponse();
+  }
+};
+const AboutIntentHandler = {
+  canHandle(handlerInput) {
+    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+      && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
+  },
+  handle(handlerInput) {
+    const speakOutput = 'Ocean-Archive.org is an archive of ocean pictures, movies, audio and stories developed by the TBA21–Academy in collaboration with Across the Cloud.';
 
     return handlerInput.responseBuilder
       .speak(speakOutput)
@@ -263,6 +286,7 @@ exports.handler = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
     LaunchRequestHandler,
     HelpIntentHandler,
+    AboutIntentHandler,
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler,
     AudioSearchHandler,
