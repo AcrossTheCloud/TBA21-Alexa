@@ -60,8 +60,6 @@ const AudioSearchHandler = {
     delete signedRequest.headers['Host'];
     delete signedRequest.headers['Content-Length'];
 
-    console.log(signedRequest);
-
     let response = await axios(signedRequest);
     let result;
     if (term) {
@@ -76,7 +74,7 @@ const AudioSearchHandler = {
     } else {
       result = response.data.results;
     }
-    console.log(result);
+
     let speechOutput = '';
 
     if (result.length===0) {
@@ -87,7 +85,7 @@ const AudioSearchHandler = {
       let audio = '';
 
       let url = `${process.env.ALEXA_CDN_BASE_URL}/${item.s3_key.slice(0,-4)}_Alexa_audio.mp3`;
-      console.log(url);
+
       audio = encodeURI(url);
 
       if (audio) {
@@ -153,23 +151,19 @@ const StoryHandler = {
       console.error(e);
     }
     let result = response.data;
-    console.log(result);
 
     if (result.length===0) {
       speechOutput = 'Sorry, no matching items found.';
     } else {
       const post = sample(result);
-      console.log(post);
       let authors = [];
       await Promise.all(post.categories.map(async (category)=>{
         const categoryResponse = await axios(`${process.env.WP_BASE_URL}/wp-json/wp/v2/categories/${category}`);
         const categoryData = categoryResponse.data;
-        console.log(categoryData);
         if (categoryData.parent===370) { // author category
           authors.push(categoryData.name)
         }
       }));
-      console.log(authors);
       let authorSpeech = '';
       if (authors.length > 0) {
         authorSpeech += 'By ';
@@ -200,8 +194,6 @@ const StoryHandler = {
       } else {
         speechOutput = `${post.title.rendered} by ${authorSpeech}. ${storyContent}`;
       }
-      console.log(storyContent);
-      console.log(speechOutput);
 
     }
     return responseBuilder.speak(speechOutput).getResponse();
